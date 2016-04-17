@@ -1,0 +1,175 @@
+/************************************************************************
+*   文件名：sunday01.c
+*   文件描述：sunday函数接口
+*	函数思路:在匹配过程中，模式串并不被要求一定要按从左向右进行比较还是从右向左进行比较，
+*			它在发现不匹配时，算法能跳过尽可能多的字符以进行下一步的匹配，从而提高了匹配效率。
+*	优化思路:1.第一次从首字符匹配，后续依次从子串长度+1个字符开始检查
+*			 2.对于每一个字符首先检查待检查字符串的后续部分与当前子串的后续部分长度是否满足要求，尽可能减少匹配次数
+*	创建人： SJW, 2016年4月14日
+*   版本号：1.0
+*   修改记录：增加链表，保证匹配所有
+************************************************************************/
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef  int LINK_TYPE;
+
+typedef struct link_list{
+	LINK_TYPE elements;
+	struct link_list * next;
+}LINK_LIST;
+
+typedef struct link_head{
+	int num;
+	LINK_LIST * next;
+}LINK_HEAD;
+
+LINK_HEAD * head;
+
+int link_init()
+{
+	head = (LINK_HEAD * ) malloc(sizeof(LINK_HEAD));
+	head->num = 0;
+	head->next=NULL;
+	return 0;
+}
+int link_add(LINK_LIST * node)
+{
+	if(!node&&!head)
+		return -1;
+	node->next = head->next;
+	head->next = node;
+	return 0;
+}
+
+int link_del(LINK_LIST * node)
+{
+	if(!node&&!head)
+		goto ERR;
+	LINK_LIST * node1 = head->next;	
+	LINK_LIST * node2 = node1->next;
+	if(!memcmp(&(node->elements), &(node1->elements), sizeof(LINK_TYPE)))
+	{
+		head->next = node1->next;
+		node1->next = NULL;
+		free(node1);
+		return 0;
+	}
+	while(node2)
+	{
+		if(!memcmp(&(node->elements), &(node2->elements), sizeof(LINK_TYPE)))
+		{
+			node1->next = node2->next;
+			node2->next = NULL;
+			free(node2);
+			return 0;
+		}
+			
+		node1 = node2;
+		node2=node2->next;
+	}
+ERR:	
+	return -1;
+}
+
+
+
+
+
+/*================================================================
+ * 函 数 名：find_char
+ * 参    数1：待检查的字符串
+ * 参    数2：待检查的字符
+ * 参    数3：待检查的长度
+ * 功能描述:检查子串的前n个字符中是否有待匹配字符
+ * 返 回 值：成功:字符被匹配的位置，失败-1
+ * 抛出异常：
+ ================================================================*/
+int find_char(char * str,char check,int point)
+{
+	int len = point;
+	char temp[len+1];
+	memset(temp, 0, len+1);
+	strncpy(temp,str,len );
+	if(!point||temp==NULL)
+		return -1;
+		
+	char * res = strrchr(temp,check);
+	if(res==NULL)
+		return -1;
+ 
+	return strlen(temp) - strlen(res);
+}
+
+
+/*================================================================
+ * 函 数 名：MatchAlgorithm
+ * 参    数1：待检查的字符串
+ * 参    数2：待检查的子串
+ * 功能描述:检查子串的前n个字符中是否有待匹配字符
+ * 返 回 值：成功:字符被匹配的位置，失败-1
+ * 抛出异常：
+ ================================================================*/
+int MatchAlgorithm(char * deststr, char * substr)
+{
+	int len_dst=strlen(deststr);
+	int len_sub=strlen(substr);
+	
+	if(link_init())
+		goto ERR;
+	
+	if(deststr==NULL||substr==NULL||len_dst<len_sub)
+		return -1;
+
+	if(!memcmp(substr,deststr,len_sub))
+		return 0;
+	
+	int point = len_sub;
+	while(point < len_dst)
+	{
+		int res = find_char(substr,deststr[point],len_sub);
+		while(res!=-1)
+		{
+			if(len_dst - point <len_sub - res )
+				return -1;
+			if(!memcmp(substr,deststr + point - res,len_sub))
+			{
+				//return point  - res;
+				LINK_LIST * elem = (LINK_LIST *)malloc(sizeof(LINK_LIST));
+				elem->elements = point  - res;
+				elem->next = NULL;
+				link_add(elem);
+				//printf("\nfind=%d\n",point  - res);
+				point = point + len_sub -1;
+			}
+			res = find_char(substr,deststr[point], res);
+		}
+		point++;
+	}
+ERR:	
+	return -1;
+}
+
+int main()
+{
+	
+	char * deststr="absaddsasfasdfasdf";
+	char * substr="as";
+	int res = MatchAlgorithm(deststr, substr);
+	
+	LINK_LIST *p = head->next;
+	while(head&&p)
+	{
+		printf("%d\n",p->elements);
+		p = p->next;
+	}
+	
+#if 0
+	if(res != -1)
+		printf("\nwe can find substring from %d char\n",res + 1);
+	else
+		printf("\nwe can not find substring \n");
+#endif	
+	return 0;
+}
