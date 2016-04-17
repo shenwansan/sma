@@ -37,10 +37,12 @@ int link_init()
 int link_add(LINK_LIST * node)
 {
 	if(!node&&!head)
-		return -1;
+		goto ERR;
 	node->next = head->next;
 	head->next = node;
 	return 0;
+ERR:
+	return -1;
 }
 
 int link_del(LINK_LIST * node)
@@ -93,13 +95,15 @@ int find_char(char * str,char check,int point)
 	memset(temp, 0, len+1);
 	strncpy(temp,str,len );
 	if(!point||temp==NULL)
-		return -1;
+		goto ERR;
 		
 	char * res = strrchr(temp,check);
 	if(res==NULL)
-		return -1;
+		goto ERR;
  
 	return strlen(temp) - strlen(res);
+ERR:
+	return -1;
 }
 
 
@@ -120,7 +124,7 @@ int MatchAlgorithm(char * deststr, char * substr)
 		goto ERR;
 	
 	if(deststr==NULL||substr==NULL||len_dst<len_sub)
-		return -1;
+		goto ERR;
 
 	if(!memcmp(substr,deststr,len_sub))
 		return 0;
@@ -132,7 +136,7 @@ int MatchAlgorithm(char * deststr, char * substr)
 		while(res!=-1)
 		{
 			if(len_dst - point <len_sub - res )
-				return -1;
+				goto ERR;
 			if(!memcmp(substr,deststr + point - res,len_sub))
 			{
 				//return point  - res;
@@ -145,7 +149,7 @@ int MatchAlgorithm(char * deststr, char * substr)
 			}
 			res = find_char(substr,deststr[point], res);
 		}
-		point++;
+		point+=len_sub;
 	}
 ERR:	
 	return -1;
@@ -154,7 +158,7 @@ ERR:
 int main()
 {
 	
-	char * deststr="absaddsasfasdfasdf";
+	char * deststr="absaddsasfasdfasdfsasf";
 	char * substr="as";
 	int res = MatchAlgorithm(deststr, substr);
 	
